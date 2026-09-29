@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Pick your child's class and print a colour-coded school calendar.">
+<style>html{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Class Calendar Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4F9; --surface:#FFFFFF; --surface-2:#F7F8FC; --ink:#1B2340; --muted:#5B6480; --line:#DCE1EC;
+  --accent:#2F3FB5; --accent-ink:#FFFFFF; --accent-soft:#E6E9FA; --warn-bg:#FFF4D6; --warn-ink:#7A5200;
+  --err:#B42318; --ok:#127A5B; --frame:#E4E8F1;
+  --display:'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11141D; --surface:#191E2B; --surface-2:#202637; --ink:#E7EAF3; --muted:#9AA3BD; --line:#2E3548;
+    --accent:#8F9CFF; --accent-ink:#11141D; --accent-soft:#262D4A; --warn-bg:#3A2F12; --warn-ink:#F3D58A;
+    --err:#FF8A7A; --ok:#5FD3A7; --frame:#0C0F16;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11141D; --surface:#191E2B; --surface-2:#202637; --ink:#E7EAF3; --muted:#9AA3BD; --line:#2E3548;
+  --accent:#8F9CFF; --accent-ink:#11141D; --accent-soft:#262D4A; --warn-bg:#3A2F12; --warn-ink:#F3D58A;
+  --err:#FF8A7A; --ok:#5FD3A7; --frame:#0C0F16;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px}
+@media (max-width:600px){.wrap{padding-inline:16px}}
+
+.top{padding-block:22px 6px}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{flex:none;width:46px;height:46px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:0;text-wrap:balance}
+.top p{margin:2px 0 0;color:var(--muted);max-width:62ch}
+
+.cols{display:grid;grid-template-columns:minmax(290px,360px) 1fr;gap:20px;align-items:start;margin-top:18px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.steps{display:flex;flex-direction:column}
+.step{padding:18px;display:flex;flex-direction:column;gap:12px}
+.step + .step{border-top:1px solid var(--line)}
+h2{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.2;margin:0;display:flex;align-items:center;gap:10px}
+.num{width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:14px;display:grid;place-items:center;font-family:var(--body);font-weight:700;flex:none}
+
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.field small{color:var(--muted);font-size:12.5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input[type=text],select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.classes button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 4px;cursor:pointer}
+.classes button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.chk input{margin-top:4px;accent-color:var(--accent)}
+
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{padding:5px 10px;font-size:13px}
+.status{margin:0;font-size:13.5px;color:var(--muted);min-height:1em}
+.status.err{color:var(--err)}
+.status.ok{color:var(--ok)}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.radios{display:flex;flex-direction:column;gap:6px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{font:inherit;font-size:13.5px;font-weight:600;border:0;background:var(--surface);color:var(--muted);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+
+.preview{padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:900px){.preview{position:static}}
+.pv-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mnav{display:flex;align-items:center;gap:6px}
+.mnav span{font-weight:600;min-width:120px;text-align:center;font-variant-numeric:tabular-nums}
+.banner{background:var(--warn-bg);color:var(--warn-ink);border-radius:9px;padding:8px 12px;font-size:13.5px}
+.pv-frame{background:var(--frame);border-radius:10px;padding:10px;overflow:hidden}
+.pv-inner{position:relative;overflow:hidden}
+.pv-scale{transform-origin:top left;position:absolute;top:0;left:0;box-shadow:0 2px 10px rgba(10,16,40,.18)}
+
+.dates{margin-block:20px 40px;padding:18px}
+.dates summary{cursor:pointer;font-family:var(--display);font-weight:700;font-size:19px;list-style-position:outside}
+.dates summary span{font-family:var(--body);font-weight:500;font-size:14px;color:var(--muted);margin-left:8px}
+.dates-body{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.d{white-space:nowrap;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.mrow td{background:var(--surface-2);font-weight:700;font-family:var(--display);font-size:15px;padding-top:9px}
+tr.na td{opacity:.42}
+.tdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+#printArea{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  #printArea .cal-sheet{break-after:page;page-break-after:always}
+  #printArea .cal-sheet:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg>
+    </div>
+    <div>
+      <h1>Class Calendar Maker</h1>
+      <p id="tagline"></p>
+    </div>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <div class="cols">
+    <section class="panel steps" aria-label="Steps">
+      <div class="step">
+        <h2><span class="num">1</span>Your child</h2>
+        <div class="field">
+          <label id="classLbl">Class</label>
+          <div class="classes" id="classes" role="group" aria-labelledby="classLbl"></div>
+        </div>
+        <div class="field"><label for="nameIn">Child's name (optional)</label><input id="nameIn" type="text" placeholder="Printed at the top" autocomplete="off"></div>
+        <div class="field">
+          <label for="houseSel">House (optional)</label>
+          <select id="houseSel"></select>
+          <small>Adds the weeks your child's house is on duty.</small>
+        </div>
+        <label class="chk"><input type="checkbox" id="onlyClass" checked> <span>Only show events for this class (holidays for the whole school are always shown)</span></label>
+      </div>
+
+      <div class="step">
+        <h2><span class="num">2</span>Print</h2>
+        <div class="radios" role="radiogroup" aria-label="Layout">
+          <label class="chk"><input type="radio" name="layout" id="lyYear" value="year" checked> <span><b>Whole year on one page</b>. Good for the fridge.</span></label>
+          <label class="chk"><input type="radio" name="layout" id="lyMonth" value="month"> <span><b>One month per page</b>. 12 pages with room to write.</span></label>
+          <label class="chk"><input type="radio" name="layout" id="lyBoth" value="both"> <span><b>Both</b>. 13 pages.</span></label>
+        </div>
+        <button id="dlBtn" class="btn primary" type="button">Get printable calendar</button>
+        <a id="openLink" class="btn" href="#" target="_blank" rel="noopener" hidden>Open printable calendar</a>
+        <p class="hint">Open the file in your browser and press Ctrl+P (⌘P on Mac). Choose A4 Landscape and turn on “Background graphics” so the colours print. On a phone, use Share → Print.</p>
+        <p id="dlStatus" class="status" role="status"></p>
+      </div>
+    </section>
+
+    <section class="panel preview" aria-label="Preview">
+      <div class="pv-bar">
+        <div class="seg" role="group" aria-label="Preview layout">
+          <button type="button" id="pvYear" aria-pressed="true">Year</button>
+          <button type="button" id="pvMonth" aria-pressed="false">Month</button>
+        </div>
+        <div class="mnav" id="mnav" hidden>
+          <button class="btn small" type="button" id="mPrev" aria-label="Previous month">‹</button>
+          <span id="mLabel"></span>
+          <button class="btn small" type="button" id="mNext" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div class="pv-frame"><div class="pv-inner" id="pvInner"><div class="pv-scale" id="pvScale"></div></div></div>
+    </section>
+  </div>
+
+  <details class="panel dates" id="datesPanel">
+    <summary>All dates in the planner<span id="dateCount"></span></summary>
+    <div class="dates-body">
+      <p class="hint">Copied from the school's printed planner, which says dates may change. Faded rows don't apply to the class you picked.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th style="width:170px">Date</th><th>What</th><th style="width:150px">Type</th><th style="width:140px">For</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </details>
+</main>
+
+<div id="printArea" aria-hidden="true"></div>
+
+<script>
+(function(){
+// ================= School data (from the printed planner) =================
+const SCHOOL={
+  name:'',                       // school name printed on the calendar
+  planner:'Proposed School Planner 2025–26',
+  y:2025,                        // session starts April of this year
+  classes:['Nursery','KG','P1','P2','P3','P4','P5'],
+  houses:['Mother Teresa','Sardar Vallabh Bhai Patel','Sarojini Naidu','Shaheed Bhagat Singh','Sir C V Raman','Acharya Vinoba Bhave','Chhatrapati Shivaji','Dr. Homi Jehangir Bhabha']
+};
+// [start, end, title, type, classes, house]
+const RAW=[
+ ['2025-04-01','','Orientation for parents of P4 and P5','event','P4,P5'],
+ ['2025-04-01','2025-04-26','Mother Teresa House on duty','house','','Mother Teresa'],
+ ['2025-04-02','','New session begins for P4 and P5','event','P4,P5'],
+ ['2025-04-02','','Orientation for parents of P2 and P3','event','P2,P3'],
+ ['2025-04-03','','New session begins for P2 and P3','event','P2,P3'],
+ ['2025-04-03','','Orientation for parents of KG and P1','event','KG,P1'],
+ ['2025-04-04','','New session begins for KG and P1','event','KG,P1'],
+ ['2025-04-04','','Orientation for parents of Nursery, new KG and new P1','event','Nursery,KG,P1'],
+ ['2025-04-07','','New session begins for Nursery, new KG and new P1','event','Nursery,KG,P1'],
+ ['2025-04-10','','Mahavir Jayanti','holiday'],
+ ['2025-04-18','','Good Friday','holiday'],
+ ['2025-04-26','','PTM 1','ptm','Nursery-P2'],
+ ['2025-04-28','2025-05-17','Sardar Vallabh Bhai Patel House on duty','house','','Sardar Vallabh Bhai Patel'],
+ ['2025-05-03','','PTM 1','ptm','P3-P5'],
+ ['2025-05-05','2025-05-09','Periodic Test 1','exam','P3-P5'],
+ ['2025-05-12','','Budh Poornima','holiday'],
+ ['2025-05-17','2025-06-29','Summer vacation','vacation'],
+ ['2025-06-30','','School re-opens','event'],
+ ['2025-07-01','2025-07-18','Sarojini Naidu House on duty','house','','Sarojini Naidu'],
+ ['2025-07-06','','Muharram','holiday'],
+ ['2025-07-14','2025-07-18','Book Week','event'],
+ ['2025-07-21','2025-08-08','Shaheed Bhagat Singh House on duty','house','','Shaheed Bhagat Singh'],
+ ['2025-08-02','','PTM 2','ptm','Nursery-P2'],
+ ['2025-08-11','2025-08-29','Sir C V Raman House on duty','house','','Sir C V Raman'],
+ ['2025-08-12','','Independence Day function','event'],
+ ['2025-08-15','','Independence Day','holiday'],
+ ['2025-08-16','','Janmashtami','holiday'],
+ ['2025-08-19','','English Elocution','event','P3'],
+ ['2025-08-22','','Geetanjali Maken English Elocution','event','P5'],
+ ['2025-08-26','','Hindi Katha Vachan','event','P3'],
+ ['2025-08-29','','Savitri Pratap Singh Hindi Elocution','event','P5'],
+ ['2025-08-30','','PTM 2','ptm','P3-P5'],
+ ['2025-09-01','2025-09-19','Acharya Vinoba Bhave House on duty','house','','Acharya Vinoba Bhave'],
+ ['2025-09-04','',"Teachers' Day celebration",'event'],
+ ['2025-09-05','','Milad-un-Nabi','holiday'],
+ ['2025-09-10','2025-09-19','Mid-term examination','exam','P3-P5'],
+ ['2025-09-15','','Hindi Elocution (mid-Sept, date TBA)','event','P1,P2',null,true],
+ ['2025-09-22','2025-10-10','Chhatrapati Shivaji House on duty','house','','Chhatrapati Shivaji'],
+ ['2025-09-27','2025-10-02','Dussehra break','vacation'],
+ ['2025-10-02','','Gandhi Jayanti','holiday'],
+ ['2025-10-07','','Valmiki Jayanti','holiday'],
+ ['2025-10-11','','PTM 3 (report card)','ptm','Nursery-P2'],
+ ['2025-10-13','2025-10-17','Inter-school SportsFest (chess, gymnastics, basketball, football)','event'],
+ ['2025-10-13','2025-11-07','Dr. Homi Jehangir Bhabha House on duty','house','','Dr. Homi Jehangir Bhabha'],
+ ['2025-10-18','2025-10-23','Diwali break','vacation'],
+ ['2025-10-28','','Chhath','holiday'],
+ ['2025-10-31','','English Elocution','event','P4'],
+ ['2025-11-01','','PTM 3 (report card)','ptm','P3-P5'],
+ ['2025-11-04','','Hindi Elocution','event','P4'],
+ ['2025-11-05','','Guru Nanak Jayanti','holiday'],
+ ['2025-11-07','2025-11-13','Periodic Test 2','exam','P3-P5'],
+ ['2025-11-10','2025-11-21','Mother Teresa House on duty','house','','Mother Teresa'],
+ ['2025-11-17','','English Elocution (mid-Nov, date TBA)','event','P1,P2',null,true],
+ ['2025-11-22','',"Grandparents' Day",'event','Nursery'],
+ ['2025-11-24','2025-12-05','Sardar Vallabh Bhai Patel House on duty','house','','Sardar Vallabh Bhai Patel'],
+ ['2025-11-26','','English and Hindi Creative Writing','event','P5'],
+ ['2025-12-06','','Annual Sports Meet','event','P3-P5'],
+ ['2025-12-08','2025-12-19','Sarojini Naidu House on duty','house','','Sarojini Naidu'],
+ ['2025-12-22','2025-12-31','Shaheed Bhagat Singh House on duty','house','','Shaheed Bhagat Singh'],
+ ['2025-12-24','','Winter Carnival','event'],
+ ['2025-12-25','','Christmas','holiday'],
+ ['2026-01-01','2026-01-11','Winter break','vacation'],
+ ['2026-01-12','','School re-opens','event'],
+ ['2026-01-12','2026-01-23','Sir C V Raman House on duty','house','','Sir C V Raman'],
+ ['2026-01-17','','PTM 4','ptm','P3-P5'],
+ ['2026-01-21','','22nd Junior Flash Inter-School Computer Competition','event'],
+ ['2026-01-26','','Republic Day','holiday'],
+ ['2026-01-26','2026-02-06','Acharya Vinoba Bhave House on duty','house','','Acharya Vinoba Bhave'],
+ ['2026-01-31','','PTM 4','ptm','Nursery-P2'],
+ ['2026-02-06','2026-02-07','8th Inter-School Athletic Meet','event'],
+ ['2026-02-09','2026-02-20','Chhatrapati Shivaji House on duty','house','','Chhatrapati Shivaji'],
+ ['2026-02-12','','Junior Sports Day','event','Nursery,KG'],
+ ['2026-02-13','','Junior Sports Day','event','P1,P2'],
+ ['2026-02-16','','Mahashivratri','holiday'],
+ ['2026-02-18','2026-02-27','Annual examination','exam','P3-P5'],
+ ['2026-02-23','2026-03-06','Dr. Homi Jehangir Bhabha House on duty','house','','Dr. Homi Jehangir Bhabha'],
+ ['2026-02-28','','PTA Dinner / Lunch','event'],
+ ['2026-03-04','','Holi','holiday'],
+ ['2026-03-06','','P5 Award Ceremony','event','P5'],
+ ['2026-03-18','','Valedictory Ceremony','event','P5'],
+ ['2026-03-19','','PTM 5','ptm','Nursery-P5'],
+ ['2026-03-20','','Id-ul-Fitr','holiday']
+];
+// ==========================================================================
+
+const FONT_URL='https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap';
+const SHEET_W=1047, SHEET_H=718; // A4 landscape minus 10mm margins, at 96dpi
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MON=MONTHS.map(m=>m.slice(0,3));
+const WD=['S','M','T','W','T','F','S'];
+const WDL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TYPES={
+  holiday:{label:'Holiday',c:'#C8412A',bg:'#FBE0D8',p:5},
+  vacation:{label:'Vacation / break',c:'#B85A0C',bg:'#FDEAD3',p:4},
+  exam:{label:'Exam / test',c:'#6340B8',bg:'#E9E2FA',p:3},
+  ptm:{label:'PTM',c:'#8F5F05',bg:'#FAEEC7',p:2},
+  event:{label:'School event',c:'#10796A',bg:'#D3EFE8',p:1},
+  house:{label:'House on duty',c:'#2B62A8',bg:'#DCE8F7',p:0}
+};
+const CLASSES=SCHOOL.classes;
+function parseClasses(s){
+  if(!s||/all/i.test(s))return['all'];
+  const out=new Set();
+  for(const tok of s.split(',')){const r=tok.split('-').map(x=>CLASSES.indexOf(x.trim()));
+    if(r.length===2&&r[0]>=0&&r[1]>=0){for(let i=r[0];i<=r[1];i++)out.add(i);}else if(r[0]>=0)out.add(r[0]);}
+  return[...out].sort((a,b)=>a-b).map(i=>CLASSES[i]);
+}
+function formatClasses(arr){
+  if(arr.includes('all'))return 'Everyone';
+  const idx=arr.map(c=>CLASSES.indexOf(c)).sort((a,b)=>a-b);const out=[];let i=0;
+  while(i<idx.length){let j=i;while(j+1<idx.length&&idx[j+1]===idx[j]+1)j++;
+    if(j-i>=2)out.push(CLASSES[idx[i]]+' to '+CLASSES[idx[j]]);else for(let k=i;k<=j;k++)out.push(CLASSES[idx[k]]);i=j+1;}
+  return out.join(', ');
+}
+const EVENTS=RAW.map(([start,end,title,type,cls,house,approx])=>({start,end:end||'',title,type,classes:parseClasses(cls),house:house||null,approx:!!approx}));
+
+const CAL_CSS=`
+.cal-sheet{width:${SHEET_W}px;height:${SHEET_H}px;box-sizing:border-box;padding:18px 22px;background:#fff;color:#1B2340;font-family:Figtree,system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;gap:10px;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.3}
+.cal-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-bottom:2px solid #1B2340;padding-bottom:8px}
+.cal-name{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-size:30px;font-weight:700;line-height:1}
+.cal-sub{font-size:13px;color:#5B6480;margin-top:5px}
+.cal-year{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-size:32px;font-weight:700;line-height:1;text-align:right;white-space:nowrap}
+.cal-year small{display:block;font-family:Figtree,system-ui,sans-serif;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5B6480;font-weight:600;margin-bottom:3px}
+.cal-legend{display:flex;gap:16px;font-size:11px;color:#3A4360;flex-wrap:wrap;align-items:center}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+.cal-legend .sunk{color:#C0392B;font-weight:700}
+.cy{flex:1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px 14px;min-height:0}
+.cy-m{display:flex;flex-direction:column;min-height:0;min-width:0}
+.cy-mh{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-weight:700;font-size:17px;line-height:1.1;display:flex;justify-content:space-between;align-items:baseline}
+.cy-mh span{font-size:11px;color:#8A92AB;font-weight:600}
+.cy-g{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:3px;font-size:10px;text-align:center;font-variant-numeric:tabular-nums}
+.cy-g b{font-size:8.5px;color:#8A92AB;font-weight:700;line-height:14px}
+.cy-g i{font-style:normal;height:17px;line-height:17px;border-radius:3px}
+.cy-g i.sun{color:#C0392B}
+.cy-l{list-style:none;margin:6px 0 0;padding:6px 0 0;border-top:1px dashed #D5DAE6;font-size:9.5px;line-height:1.35;display:flex;flex-direction:column;gap:1px;overflow:hidden;min-height:0}
+.cy-l li{display:flex;gap:4px;white-space:nowrap;min-width:0;align-items:baseline}
+.cy-l li em{font-style:normal;font-weight:700;flex:none;min-width:30px;font-variant-numeric:tabular-nums}
+.cy-l li span{overflow:hidden;text-overflow:ellipsis}
+.cy-l li.more{color:#8A92AB}
+.cy-l li.none{color:#A9B0C4}
+.cm{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:16px;min-height:0}
+.cm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1.5px solid #1B2340;border-radius:6px;overflow:hidden;min-height:0}
+.cm-g b{background:#1B2340;color:#fff;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cm-d{border-right:1px solid #D5DAE6;border-top:1px solid #D5DAE6;padding:4px 5px;display:flex;flex-direction:column;gap:2px;min-height:0;min-width:0;overflow:hidden}
+.cm-g>:nth-child(7n){border-right:0}
+.cm-d .n{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-weight:700;font-size:17px;line-height:1}
+.cm-d.sun .n{color:#C0392B}
+.cm-d.off{background:#F6F7FA}
+.cm-c{font-size:9.5px;line-height:1.2;padding:2px 4px;border-radius:3px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cm-side{display:flex;flex-direction:column;gap:8px;min-height:0}
+.cm-side h4{margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5B6480}
+.cm-list{list-style:none;margin:0;padding:0;font-size:11px;line-height:1.3;display:flex;flex-direction:column;gap:4px}
+.cm-list li{display:grid;grid-template-columns:48px 1fr;gap:6px;align-items:baseline}
+.cm-list li em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+.cm-list li i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.cm-list li.none{display:block;color:#A9B0C4}
+.cm-notes{flex:1;min-height:60px;background:repeating-linear-gradient(to bottom,transparent 0 23px,#D5DAE6 23px 24px)}
+`;
+const st=document.createElement('style'); st.textContent=CAL_CSS; document.head.appendChild(st);
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const DAY=86400000;
+function toT(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+m[1],+m[2]-1,+m[3]):null;}
+const daysIn=(y,m)=>new Date(Date.UTC(y,m+1,0)).getUTCDate();
+const dow=(y,m,d)=>new Date(Date.UTC(y,m,d)).getUTCDay();
+function sessionMonths(y){const a=[];for(let i=0;i<12;i++){const m=(3+i)%12;a.push({y:i<9?y:y+1,m});}return a;}
+const session=`${SCHOOL.y}–${String(SCHOOL.y+1).slice(2)}`;
+
+// ---------- viewer choices (remembered in this browser only) ----------
+let state={name:'',cls:'P3',house:'',onlyClass:true,layout:'year'};
+const KEY='class-calendar-maker-prefs-v2';
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&typeof s==='object')state=Object.assign(state,s);}catch(e){}
+if(!CLASSES.includes(state.cls))state.cls=CLASSES[0];
+if(state.house&&!SCHOOL.houses.includes(state.house))state.house='';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+
+const shown=e=>{
+  if(e.type==='house')return !!state.house&&e.house===state.house;
+  return !state.onlyClass||e.classes.includes('all')||e.classes.includes(state.cls);
+};
+const forClass=e=>e.type==='house'?(!!state.house&&e.house===state.house):(e.classes.includes('all')||e.classes.includes(state.cls));
+
+let pvMode='year';
+let pvIdx=(()=>{const n=new Date(),i=sessionMonths(SCHOOL.y).findIndex(o=>o.y===n.getFullYear()&&o.m===n.getMonth());return i<0?0:i;})();
+
+// ---------- calendar rendering ----------
+function span(e){const s=toT(e.start);let t=toT(e.end);if(t==null||t<s)t=s;return[s,t];}
+function dayMap(evs){
+  const map=new Map();
+  for(const e of evs){if(e.approx)continue;const[s,t]=span(e);for(let x=s;x<=t;x+=DAY){const k=new Date(x).toISOString().slice(0,10);if(!map.has(k))map.set(k,[]);map.get(k).push(e);}}
+  return map;
+}
+const topType=list=>list.reduce((a,e)=>TYPES[e.type].p>TYPES[a].p?e.type:a,list[0].type);
+function monthEvents(evs,y,m){
+  const ms=Date.UTC(y,m,1),me=Date.UTC(y,m,daysIn(y,m));
+  return evs.map(e=>{const[s,t]=span(e);if(s>me||t<ms)return null;
+      const d1=new Date(Math.max(s,ms)).getUTCDate(),d2=new Date(Math.min(t,me)).getUTCDate();
+      return{e,d1,d2,label:e.approx?'Mid':(d1===d2?String(d1):d1+'–'+d2)};}).filter(Boolean)
+    .sort((a,b)=>a.d1-b.d1||TYPES[b.e.type].p-TYPES[a.e.type].p);
+}
+function head(right,rightSmall){
+  const nm=state.name.trim();
+  const who=nm?esc(nm):'Class '+esc(state.cls);
+  const bits=[nm?'Class '+state.cls:null,state.house?state.house+' House':null,SCHOOL.name||null,state.onlyClass?null:'All classes'].filter(Boolean).map(esc);
+  return `<div class="cal-head"><div><div class="cal-name">${who}</div><div class="cal-sub">${bits.join(' · ')||esc(SCHOOL.planner)}</div></div><div class="cal-year"><small>${esc(rightSmall)}</small>${esc(right)}</div></div>`;
+}
+function legend(){
+  return `<div class="cal-legend">${Object.entries(TYPES).filter(([k])=>k!=='house'||state.house).map(([,t])=>`<span><i class="cal-sw" style="background:${t.bg};border:1.5px solid ${t.c}"></i>${t.label}</span>`).join('')}<span><b class="sunk">S</b>&nbsp;= Sunday</span></div>`;
+}
+function yearSheet(){
+  const evs=EVENTS.filter(shown),map=dayMap(evs);
+  const boxes=sessionMonths(SCHOOL.y).map(({y,m})=>{
+    let g=WD.map(w=>`<b>${w}</b>`).join('')+'<i></i>'.repeat(dow(y,m,1));
+    for(let d=1;d<=daysIn(y,m);d++){
+      const list=map.get(iso(y,m,d));
+      let sty='';if(list){const t=TYPES[topType(list)];sty=` style="background:${t.bg};color:${t.c};font-weight:700"`;}
+      g+=`<i class="${dow(y,m,d)===0?'sun':''}"${sty}>${d}</i>`;
+    }
+    const me=monthEvents(evs,y,m),MAX=11;
+    let li=me.slice(0,me.length>MAX?MAX-1:MAX).map(o=>`<li><em style="color:${TYPES[o.e.type].c}">${o.label}</em><span>${esc(o.e.title)}</span></li>`).join('');
+    if(me.length>MAX)li+=`<li class="more">+${me.length-MAX+1} more on the monthly pages</li>`;
+    if(!me.length)li='<li class="none">No events</li>';
+    return `<div class="cy-m"><div class="cy-mh">${MONTHS[m]}<span>${y}</span></div><div class="cy-g">${g}</div><ul class="cy-l">${li}</ul></div>`;
+  }).join('');
+  return `<div class="cal-sheet">${head(session,'School year')}${legend()}<div class="cy">${boxes}</div></div>`;
+}
+function monthSheet(y,m){
+  const evs=EVENTS.filter(shown),map=dayMap(evs),me=monthEvents(evs,y,m);
+  const first=dow(y,m,1),n=daysIn(y,m),rows=Math.ceil((first+n)/7);
+  let g=WDL.map(w=>`<b>${w}</b>`).join('');
+  for(let i=0;i<rows*7;i++){
+    const d=i-first+1;
+    if(d<1||d>n){g+='<div class="cm-d off"></div>';continue;}
+    const list=map.get(iso(y,m,d))||[];
+    const fills=list.filter(e=>e.type==='holiday'||e.type==='vacation');
+    const bg=fills.length?` style="background:${TYPES[topType(fills)].bg}"`:'';
+    const chips=me.filter(o=>!o.e.approx&&o.d1===d).map(o=>{const t=TYPES[o.e.type];return `<div class="cm-c" style="background:${t.bg};color:${t.c}">${esc(o.e.title)}${o.d2!==o.d1?` <span style="font-weight:500">(to ${o.d2})</span>`:''}</div>`;}).join('');
+    g+=`<div class="cm-d${dow(y,m,d)===0?' sun':''}"${bg}><span class="n">${d}</span>${chips}</div>`;
+  }
+  const list=me.length?me.map(o=>`<li><em>${o.e.approx?'Mid':o.d1===o.d2?`${o.d1} ${MON[m]}`:`${o.d1}–${o.d2}`}</em><span><i style="background:${TYPES[o.e.type].c}"></i>${esc(o.e.title)}</span></li>`).join(''):'<li class="none">No school events this month.</li>';
+  return `<div class="cal-sheet">${head(`${MONTHS[m]} ${y}`,'Session '+session)}<div class="cm"><div class="cm-g" style="grid-template-rows:24px repeat(${rows},minmax(0,1fr))">${g}</div><div class="cm-side"><h4>This month</h4><ul class="cm-list">${list}</ul><h4 style="margin-top:6px">Notes</h4><div class="cm-notes"></div></div></div></div>`;
+}
+
+// ---------- preview ----------
+const pvInner=$('#pvInner'),pvScale=$('#pvScale');
+function fit(){const w=pvInner.clientWidth;if(!w)return;const s=w/SHEET_W;pvScale.style.transform=`scale(${s})`;pvInner.style.height=(SHEET_H*s)+'px';}
+function renderPreview(){
+  if(pvMode==='year')pvScale.innerHTML=yearSheet();
+  else{const{y,m}=sessionMonths(SCHOOL.y)[pvIdx];pvScale.innerHTML=monthSheet(y,m);$('#mLabel').textContent=`${MONTHS[m]} ${y}`;}
+  $('#mnav').hidden=pvMode!=='month';
+  $('#pvYear').setAttribute('aria-pressed',pvMode==='year');$('#pvMonth').setAttribute('aria-pressed',pvMode==='month');
+  fit();
+}
+try{new ResizeObserver(fit).observe(pvInner);}catch(e){addEventListener('resize',fit);}
+$('#pvYear').onclick=()=>{pvMode='year';renderPreview();};
+$('#pvMonth').onclick=()=>{pvMode='month';renderPreview();};
+$('#mPrev').onclick=()=>{pvIdx=(pvIdx+11)%12;renderPreview();};
+$('#mNext').onclick=()=>{pvIdx=(pvIdx+1)%12;renderPreview();};
+
+// ---------- all-dates table ----------
+function fmtDate(e){
+  const s=new Date(toT(e.start)),a=`${s.getUTCDate()} ${MON[s.getUTCMonth()]}`;
+  if(e.approx)return 'Mid-'+MONTHS[s.getUTCMonth()];
+  if(!e.end)return `${WDL[s.getUTCDay()]}, ${a}`;
+  const t=new Date(toT(e.end));return `${a} – ${t.getUTCDate()} ${MON[t.getUTCMonth()]}`;
+}
+function renderTable(){
+  const list=EVENTS.filter(e=>e.type!=='house'||(state.house&&e.house===state.house));
+  let html='',lastM='';
+  for(const e of list){
+    const s=new Date(toT(e.start)),mk=MONTHS[s.getUTCMonth()]+' '+s.getUTCFullYear();
+    if(mk!==lastM){html+=`<tr class="mrow"><td colspan="4">${mk}</td></tr>`;lastM=mk;}
+    const t=TYPES[e.type];
+    html+=`<tr class="${forClass(e)?'':'na'}"><td class="d">${fmtDate(e)}</td><td>${esc(e.title)}</td><td><span class="tdot" style="background:${t.c}"></span>${t.label}</td><td>${e.type==='house'?'Your house':formatClasses(e.classes)}</td></tr>`;
+  }
+  $('#tbody').innerHTML=html;
+  const n=EVENTS.filter(e=>e.type!=='house'&&forClass(e)).length;
+  $('#dateCount').textContent=`${n} for ${state.cls}`;
+}
+
+// ---------- controls ----------
+$('#tagline').textContent=`Pick your child's class and print a colour-coded school calendar for ${SCHOOL.y}–${String(SCHOOL.y+1).slice(2)}, taken from the school's printed planner.`;
+$('#classes').innerHTML=CLASSES.map(c=>`<button type="button" data-c="${c}" aria-pressed="false">${c}</button>`).join('');
+$('#houseSel').innerHTML='<option value="">Don’t show house duty</option>'+SCHOOL.houses.map(h=>`<option value="${esc(h)}">${esc(h)} House</option>`).join('');
+function syncFields(){
+  document.querySelectorAll('#classes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===state.cls));
+  $('#nameIn').value=state.name;$('#houseSel').value=state.house;$('#onlyClass').checked=state.onlyClass;
+  document.querySelectorAll('input[name=layout]').forEach(r=>r.checked=r.value===state.layout);
+}
+function update(){save();syncFields();renderPreview();renderTable();resetLink();}
+$('#classes').addEventListener('click',e=>{const c=e.target.dataset&&e.target.dataset.c;if(c){state.cls=c;update();}});
+$('#nameIn').addEventListener('input',e=>{state.name=e.target.value;save();renderPreview();resetLink();});
+$('#houseSel').addEventListener('change',e=>{state.house=e.target.value;update();});
+$('#onlyClass').addEventListener('change',e=>{state.onlyClass=e.target.checked;update();});
+document.querySelectorAll('input[name=layout]').forEach(r=>r.addEventListener('change',()=>{state.layout=r.value;save();resetLink();}));
+
+// ---------- printable file ----------
+function printableHTML(){
+  const sheets=[];
+  if(state.layout!=='month')sheets.push(yearSheet());
+  if(state.layout!=='year')sessionMonths(SCHOOL.y).forEach(({y,m})=>sheets.push(monthSheet(y,m)));
+  const title=`${state.name.trim()||'Class '+state.cls} – School calendar ${session}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><link href="${FONT_URL}" rel="stylesheet"><style>${CAL_CSS}
+@page{size:A4 landscape;margin:10mm}
+html,body{margin:0;background:#E9ECF3}
+.tip{font:14px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;max-width:${SHEET_W}px;margin:16px auto;padding:12px 16px;background:#fff;border:1px solid #D5DAE6;border-radius:8px;color:#1B2340;box-sizing:border-box;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tip button{font:inherit;font-weight:600;background:#2F3FB5;color:#fff;border:0;border-radius:8px;padding:8px 16px;cursor:pointer}
+.cal-sheet{margin:0 auto 16px;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+@media print{html,body{background:#fff}.tip{display:none}.cal-sheet{margin:0;box-shadow:none;break-after:page;page-break-after:always}.cal-sheet:last-child{break-after:auto;page-break-after:auto}}
+</style></head><body><div class="tip"><button onclick="window.print()">Print</button><span>Or press Ctrl+P (⌘P on Mac). Choose paper <b>A4</b>, layout <b>Landscape</b>, and tick <b>Background graphics</b> so the colours print. To keep a PDF, pick “Save as PDF” as the printer.</span></div>
+${sheets.join('\n')}</body></html>`;
+}
+const fileName=()=>`${(state.name.trim()||'class-'+state.cls).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}-calendar-${SCHOOL.y}-${String(SCHOOL.y+1).slice(2)}.html`;
+let dl=null,blobUrl=null;
+const ds=$('#dlStatus');
+function setStatus(msg,kind){ds.textContent=msg;ds.className='status'+(kind?' '+kind:'');}
+function resetLink(){$('#openLink').hidden=true;if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}}
+function offerLink(){
+  resetLink();
+  blobUrl=URL.createObjectURL(new Blob([printableHTML()],{type:'text/html'}));
+  const a=$('#openLink');a.href=blobUrl;a.download=fileName();a.hidden=false;
+}
+$('#dlBtn').onclick=async()=>{
+  if(dl){
+    try{await dl.save({filename:fileName(),data:printableHTML()});setStatus(`Saved ${fileName()}. Open it and press Print.`,'ok');return;}
+    catch(e){if(e&&e.code==='declined'){setStatus('Download cancelled.');return;}}
+  }
+  if(!window.claude){
+    // Normal website: print straight from this page.
+    const pa=$('#printArea');
+    const sheets=[];
+    if(state.layout!=='month')sheets.push(yearSheet());
+    if(state.layout!=='year')sessionMonths(SCHOOL.y).forEach(({y,m})=>sheets.push(monthSheet(y,m)));
+    pa.innerHTML=sheets.join('');
+    const old=document.title;document.title=fileName().replace(/\.html$/,'');
+    window.print();
+    setTimeout(()=>{document.title=old;},1000);
+    setStatus('Pick A4 and Landscape, and turn on “Background graphics” in the print options.');
+    return;
+  }
+  // Inside claude.ai with downloads unavailable: open the printable page in a new tab.
+  offerLink();
+  setStatus('Tap “Open printable calendar” to open it in a new tab, then press Print.');
+};
+
+// ---------- boot ----------
+syncFields();renderPreview();renderTable();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+(async()=>{
+  if(!(window.claude&&typeof window.claude.use==='function')){
+    $('#dlBtn').textContent='Print calendar';
+    document.querySelector('#dlBtn + a + .hint').textContent='Choose A4 Landscape and turn on “Background graphics” so the colours print. To keep a copy, pick “Save as PDF” as the printer.';
+    return;
+  }
+  dl=await window.claude.use('downloads').catch(()=>null);
+})();
+})();
+</script>
+</body>
+</html>
