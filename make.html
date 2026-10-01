@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Upload your school's yearly calendar screenshots, pick your child's class, and print a colour-coded calendar.">
+<title>Class Calendar Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F2F4F9; --surface:#FFFFFF; --surface-2:#F7F8FC; --ink:#1B2340; --muted:#5B6480; --line:#DCE1EC;
+  --accent:#2F3FB5; --accent-ink:#FFFFFF; --accent-soft:#E6E9FA; --warn-bg:#FFF4D6; --warn-ink:#7A5200;
+  --err:#B42318; --ok:#127A5B; --frame:#E4E8F1;
+  --display:'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;
+    --bg:#11141D; --surface:#191E2B; --surface-2:#202637; --ink:#E7EAF3; --muted:#9AA3BD; --line:#2E3548;
+    --accent:#8F9CFF; --accent-ink:#11141D; --accent-soft:#262D4A; --warn-bg:#3A2F12; --warn-ink:#F3D58A;
+    --err:#FF8A7A; --ok:#5FD3A7; --frame:#0C0F16;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+[hidden]{display:none!important}
+img{max-width:100%}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:20px}
+@media (max-width:600px){.wrap{padding-inline:16px}}
+
+.top{padding-block:22px 6px}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{flex:none;width:46px;height:46px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:0;text-wrap:balance}
+.top p{margin:2px 0 0;color:var(--muted);max-width:66ch}
+
+.cols{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:20px;align-items:start;margin-top:18px}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.steps{display:flex;flex-direction:column}
+.step{padding:18px;display:flex;flex-direction:column;gap:12px}
+.step + .step{border-top:1px solid var(--line)}
+h2{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.2;margin:0;display:flex;align-items:center;gap:10px}
+.num{width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:14px;display:grid;place-items:center;font-family:var(--body);font-weight:700;flex:none}
+
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border:2px dashed var(--line);border-radius:12px;padding:18px 12px;cursor:pointer;background:var(--surface-2);transition:border-color .15s}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop strong{font-weight:600}
+.drop span{color:var(--muted);font-size:13px}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.thumb{position:relative;aspect-ratio:3/4;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--surface-2);display:grid;place-items:center;max-width:100%}
+.thumb img{max-width:100%;max-height:100%;object-fit:contain;display:block;transition:transform .2s}
+.thumb .tb{position:absolute;inset:auto 4px 4px 4px;display:flex;justify-content:space-between}
+.thumb button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(20,24,40,.78);color:#fff;font-size:14px;line-height:1;cursor:pointer}
+.thumb .rm{position:absolute;top:4px;right:4px}
+
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:380px){.grid2{grid-template-columns:1fr}}
+input[type=text],input[type=date],select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;font-size:13.5px}
+input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible,summary:focus-visible,.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.chk input{margin-top:4px;accent-color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:8px 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--err)}
+.status{margin:0;font-size:13.5px;color:var(--muted);min-height:1em}
+.status.err{color:var(--err)}
+.status.ok{color:var(--ok)}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+details.paste summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--accent)}
+details.paste[open] summary{margin-bottom:8px}
+.paste-body{display:flex;flex-direction:column;gap:8px}
+.radios{display:flex;flex-direction:column;gap:6px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{font:inherit;font-size:13.5px;font-weight:600;border:0;background:var(--surface);color:var(--muted);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.preview{padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:900px){.preview{position:static}}
+.pv-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mnav{display:flex;align-items:center;gap:6px}
+.mnav span{font-weight:600;min-width:120px;text-align:center;font-variant-numeric:tabular-nums}
+.banner{background:var(--warn-bg);color:var(--warn-ink);border-radius:9px;padding:8px 12px;font-size:13.5px}
+.pv-frame{background:var(--frame);border-radius:10px;padding:10px;overflow:hidden}
+.pv-inner{position:relative;overflow:hidden}
+.pv-scale{transform-origin:top left;position:absolute;top:0;left:0;box-shadow:0 2px 10px rgba(10,16,40,.18)}
+
+.dates{margin-block:20px 24px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.dates-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dates-head p{margin:0;color:var(--muted);font-size:14px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:880px;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface-2);padding:8px;border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td input,td select{padding:6px 8px}
+tr.na td{opacity:.5}
+.tdot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.x{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.x:hover{color:var(--err);background:var(--surface-2)}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+footer{padding-block:0 32px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+#printArea{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  html,body{background:#fff}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block}
+  #printArea .cal-sheet{break-after:page;page-break-after:always}
+  #printArea .cal-sheet:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17h2"/></svg>
+    </div>
+    <div>
+      <h1>Class Calendar Maker</h1>
+      <p>Add screenshots or photos of your school's yearly calendar, pick your child's class, and print a colour-coded calendar. Your photos are read on this device and never uploaded.</p>
+    </div>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <div class="cols">
+    <section class="panel steps" aria-label="Steps">
+      <div class="step">
+        <h2><span class="num">1</span>School calendar pictures</h2>
+        <label class="drop" id="drop" for="photoInput">
+          <strong>Add screenshots or photos</strong>
+          <span>Add every page. Straight, well-lit, close-up pictures read best.</span>
+          <input id="photoInput" type="file" accept="image/*" multiple hidden>
+        </label>
+        <div id="thumbs" class="thumbs"></div>
+        <label class="chk"><input type="checkbox" id="replaceChk" checked> <span>Replace the dates already in the list</span></label>
+        <div class="row">
+          <button id="readBtn" class="btn primary" type="button" disabled>Read dates from pictures</button>
+          <button id="stopBtn" class="btn" type="button" hidden>Stop</button>
+        </div>
+        <div class="bar" id="bar" hidden><i id="barFill"></i></div>
+        <p id="readStatus" class="status" role="status"></p>
+        <details class="paste">
+          <summary>Have the calendar as text or PDF? Paste it instead</summary>
+          <div class="paste-body">
+            <textarea id="pasteIn" placeholder="Paste the calendar text here, e.g.&#10;01.04.2025  Tuesday  New session begins&#10;10.04.2025  Thursday  Mahavir Jayanti - HOLIDAY"></textarea>
+            <button id="pasteBtn" class="btn" type="button">Read pasted text</button>
+          </div>
+        </details>
+      </div>
+
+      <div class="step">
+        <h2><span class="num">2</span>Your child</h2>
+        <div class="grid2">
+          <div class="field"><label for="classSel">Class</label><select id="classSel"></select></div>
+          <div class="field"><label for="nameIn">Name (optional)</label><input id="nameIn" type="text" placeholder="Printed at the top" autocomplete="off"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="schoolIn">School (optional)</label><input id="schoolIn" type="text" placeholder="School name" autocomplete="off"></div>
+          <div class="field"><label for="yearSel">Session</label><select id="yearSel"></select></div>
+        </div>
+        <div class="field" id="houseField" hidden><label for="houseSel">House (optional)</label><select id="houseSel"></select></div>
+        <label class="chk"><input type="checkbox" id="onlyClass" checked> <span>Only show events for this class (whole-school holidays always show)</span></label>
+      </div>
+
+      <div class="step">
+        <h2><span class="num">3</span>Print</h2>
+        <div class="radios" role="radiogroup" aria-label="Layout">
+          <label class="chk"><input type="radio" name="layout" id="lyYear" value="year" checked> <span><b>Whole year on one page</b>. Good for the fridge.</span></label>
+          <label class="chk"><input type="radio" name="layout" id="lyMonth" value="month"> <span><b>One month per page</b>. 12 pages with room to write.</span></label>
+          <label class="chk"><input type="radio" name="layout" id="lyBoth" value="both"> <span><b>Both</b>. 13 pages.</span></label>
+        </div>
+        <button id="printBtn" class="btn primary" type="button">Print calendar</button>
+        <p class="hint">Choose A4 Landscape and turn on “Background graphics” so the colours print. To keep a copy, pick “Save as PDF” as the printer.</p>
+      </div>
+    </section>
+
+    <section class="panel preview" aria-label="Preview">
+      <div class="pv-bar">
+        <div class="seg" role="group" aria-label="Preview layout">
+          <button type="button" id="pvYear" aria-pressed="true">Year</button>
+          <button type="button" id="pvMonth" aria-pressed="false">Month</button>
+        </div>
+        <div class="mnav" id="mnav" hidden>
+          <button class="btn small" type="button" id="mPrev" aria-label="Previous month">‹</button>
+          <span id="mLabel"></span>
+          <button class="btn small" type="button" id="mNext" aria-label="Next month">›</button>
+        </div>
+      </div>
+      <div id="sampleBanner" class="banner">This is an example calendar. Add your school's pictures in step 1 to make your own.</div>
+      <div class="pv-frame"><div class="pv-inner" id="pvInner"><div class="pv-scale" id="pvScale"></div></div></div>
+    </section>
+  </div>
+
+  <section class="panel dates" aria-label="Dates">
+    <div class="dates-head">
+      <div>
+        <h2>Check the dates</h2>
+        <p id="dateCount"></p>
+      </div>
+      <div class="row">
+        <button class="btn small" type="button" id="addBtn">+ Add date</button>
+        <button class="btn small" type="button" id="saveJsonBtn">Save dates file</button>
+        <label class="btn small" for="loadJson">Load dates file<input type="file" id="loadJson" accept=".json,application/json" hidden></label>
+        <button class="btn small danger" type="button" id="clearBtn">Clear all</button>
+      </div>
+    </div>
+    <p class="hint">Reading pictures isn't perfect, so compare this list with the school calendar and fix anything wrong. In the Classes column, type <b>All</b>, or classes such as <b>1–5</b>, <b>Nursery, KG</b> or <b>LKG–2</b>. Use “Save dates file” to share the checked list with other parents; they can open it with “Load dates file” and skip step 1.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:150px">From</th><th style="width:150px">To (optional)</th><th>What</th><th style="width:170px">Type</th><th style="width:150px">Classes</th><th style="width:44px"></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Free to use. Nothing you add leaves this device; your list is remembered only in this browser.</footer>
+</main>
+
+<div id="printArea" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+(function(){
+const SHEET_W=1047, SHEET_H=718; // A4 landscape minus 10mm margins, at 96dpi
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MON=MONTHS.map(m=>m.slice(0,3));
+const WD=['S','M','T','W','T','F','S'];
+const WDL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TYPES={
+  holiday:{label:'Holiday',c:'#C8412A',bg:'#FBE0D8',p:5},
+  vacation:{label:'Vacation / break',c:'#B85A0C',bg:'#FDEAD3',p:4},
+  exam:{label:'Exam / test',c:'#6340B8',bg:'#E9E2FA',p:3},
+  ptm:{label:'PTM',c:'#8F5F05',bg:'#FAEEC7',p:2},
+  event:{label:'School event',c:'#10796A',bg:'#D3EFE8',p:1},
+  house:{label:'House on duty',c:'#2B62A8',bg:'#DCE8F7',p:0}
+};
+const ORDER=['PG','Nursery','KG','LKG','UKG','1','2','3','4','5','6','7','8','9','10','11','12'];
+const CLASS_LABEL=c=>/^\d+$/.test(c)?'Class '+c:(c==='PG'?'Playgroup':c);
+
+const CAL_CSS=`
+.cal-sheet{width:${SHEET_W}px;height:${SHEET_H}px;box-sizing:border-box;padding:18px 22px;background:#fff;color:#1B2340;font-family:Figtree,system-ui,-apple-system,'Segoe UI',sans-serif;display:flex;flex-direction:column;gap:10px;overflow:hidden;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.3}
+.cal-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;border-bottom:2px solid #1B2340;padding-bottom:8px}
+.cal-name{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-size:30px;font-weight:700;line-height:1}
+.cal-sub{font-size:13px;color:#5B6480;margin-top:5px}
+.cal-year{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-size:32px;font-weight:700;line-height:1;text-align:right;white-space:nowrap}
+.cal-year small{display:block;font-family:Figtree,system-ui,sans-serif;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5B6480;font-weight:600;margin-bottom:3px}
+.cal-legend{display:flex;gap:16px;font-size:11px;color:#3A4360;flex-wrap:wrap;align-items:center}
+.cal-legend span{display:inline-flex;align-items:center;gap:5px}
+.cal-sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+.cal-legend .sunk{color:#C0392B;font-weight:700}
+.cy{flex:1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:12px 14px;min-height:0}
+.cy-m{display:flex;flex-direction:column;min-height:0;min-width:0}
+.cy-mh{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-weight:700;font-size:17px;line-height:1.1;display:flex;justify-content:space-between;align-items:baseline}
+.cy-mh span{font-size:11px;color:#8A92AB;font-weight:600}
+.cy-g{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:3px;font-size:10px;text-align:center;font-variant-numeric:tabular-nums}
+.cy-g b{font-size:8.5px;color:#8A92AB;font-weight:700;line-height:14px}
+.cy-g i{font-style:normal;height:17px;line-height:17px;border-radius:3px}
+.cy-g i.sun{color:#C0392B}
+.cy-l{list-style:none;margin:6px 0 0;padding:6px 0 0;border-top:1px dashed #D5DAE6;font-size:9.5px;line-height:1.35;display:flex;flex-direction:column;gap:1px;overflow:hidden;min-height:0}
+.cy-l li{display:flex;gap:4px;white-space:nowrap;min-width:0;align-items:baseline}
+.cy-l li em{font-style:normal;font-weight:700;flex:none;min-width:30px;font-variant-numeric:tabular-nums}
+.cy-l li span{overflow:hidden;text-overflow:ellipsis}
+.cy-l li.more{color:#8A92AB}
+.cy-l li.none{color:#A9B0C4}
+.cm{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:16px;min-height:0}
+.cm-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1.5px solid #1B2340;border-radius:6px;overflow:hidden;min-height:0}
+.cm-g b{background:#1B2340;color:#fff;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;font-weight:700}
+.cm-d{border-right:1px solid #D5DAE6;border-top:1px solid #D5DAE6;padding:4px 5px;display:flex;flex-direction:column;gap:2px;min-height:0;min-width:0;overflow:hidden}
+.cm-g>:nth-child(7n){border-right:0}
+.cm-d .n{font-family:'Baloo 2','Trebuchet MS',sans-serif;font-weight:700;font-size:17px;line-height:1}
+.cm-d.sun .n{color:#C0392B}
+.cm-d.off{background:#F6F7FA}
+.cm-c{font-size:9.5px;line-height:1.2;padding:2px 4px;border-radius:3px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cm-side{display:flex;flex-direction:column;gap:8px;min-height:0}
+.cm-side h4{margin:0;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5B6480}
+.cm-list{list-style:none;margin:0;padding:0;font-size:11px;line-height:1.3;display:flex;flex-direction:column;gap:4px}
+.cm-list li{display:grid;grid-template-columns:48px 1fr;gap:6px;align-items:baseline}
+.cm-list li em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+.cm-list li i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.cm-list li.none{display:block;color:#A9B0C4}
+.cm-notes{flex:1;min-height:60px;background:repeating-linear-gradient(to bottom,transparent 0 23px,#D5DAE6 23px 24px)}
+`;
+const st=document.createElement('style');st.textContent=CAL_CSS;document.head.appendChild(st);
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const DAY=86400000;
+function toT(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');if(!m)return null;const t=Date.UTC(+m[1],+m[2]-1,+m[3]);return isNaN(t)?null:t;}
+const daysIn=(y,m)=>new Date(Date.UTC(y,m+1,0)).getUTCDate();
+const dow=(y,m,d)=>new Date(Date.UTC(y,m,d)).getUTCDay();
+function sessionMonths(y){const a=[];for(let i=0;i<12;i++){const m=(3+i)%12;a.push({y:i<9?y:y+1,m});}return a;}
+const uid=()=>Math.random().toString(36).slice(2,10);
+const thisSession=(()=>{const n=new Date();return n.getMonth()>=3?n.getFullYear():n.getFullYear()-1;})();
+
+// ================= Reading calendar text =================
+const MONTH_RE='jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+const monthIdx=s=>['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(s.slice(0,3).toLowerCase());
+const ROMAN={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10,xi:11,xii:12};
+
+function normLine(s){
+  return s.replace(/[“”]/g,'"').replace(/[‘’]/g,"'")
+    // fix OCR slips inside numeric dates: O->0, l/I/|->1, comma->dot
+    .replace(/[\dOoIl|]{1,2}\s?[.,\/-]\s?[\dOoIl|]{1,2}\s?[.,\/-]\s?[\dOoIlS]{2,4}/g,m=>/\d/.test(m)?m.replace(/[Oo]/g,'0').replace(/[Il|]/g,'1').replace(/S/g,'5').replace(/,/g,'.').replace(/\s/g,''):m)
+    .replace(/\s+/g,' ').trim();
+}
+function findDates(line){
+  const found=[];
+  const add=(i,len,d,m,y)=>{if(m<0||m>11||d<1||d>31)return;found.push({i,end:i+len,d,m,y});};
+  let r;
+  const num=/(?<!\d)(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4}|\d{2})(?!\d)/g;
+  while((r=num.exec(line))){let d=+r[1],m=+r[2];if(m>12&&d<=12){const t=d;d=m;m=t;}let y=+r[3];if(y<100)y+=2000;add(r.index,r[0].length,d,m-1,y);}
+  // dates whose dots were lost in reading: 05092025, 01.092025
+  const tight=/(?<![\d.])(\d{2})[.,]?(\d{2})[.,]?(20\d{2})(?!\d)/g;
+  while((r=tight.exec(line))){add(r.index,r[0].length,+r[1],+r[2]-1,+r[3]);}
+  const a=new RegExp(`(?<![\\d.])(\\d{1,2})(?:st|nd|rd|th)?\\s*(?:of\\s+)?(${MONTH_RE})\\b\\.?,?(?:\\s*(\\d{4}))?`,'gi');
+  while((r=a.exec(line))){add(r.index,r[0].length,+r[1],monthIdx(r[2]),r[3]?+r[3]:null);}
+  const b=new RegExp(`\\b(${MONTH_RE})\\b\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?!\\d)(?:,?\\s*(\\d{4}))?`,'gi');
+  while((r=b.exec(line))){add(r.index,r[0].length,+r[2],monthIdx(r[1]),r[3]?+r[3]:null);}
+  found.sort((x,y)=>x.i-y.i||(y.end-y.i)-(x.end-x.i));
+  const out=[];for(const f of found){if(out.length&&f.i<out[out.length-1].end)continue;out.push(f);}
+  return out;
+}
+function canonClass(w){w=w.toLowerCase().replace(/\s/g,'');
+  if(w==='nursery'||w==='nur')return'Nursery';if(w==='lkg')return'LKG';if(w==='ukg')return'UKG';if(w==='kg')return'KG';
+  return'PG';}
+function detectClasses(text){
+  let t=' '+text+' ';
+  t=t.replace(/and(?=P\s?\d)/gi,'and ');
+  t=t.replace(/\b(?:class(?:es)?|std\.?|standards?|grades?)\s*((?:\b(?:[ivx]{1,4}|\d{1,2})\b(?:\s*(?:,|&|and|-|–|—|to)\s*)?)+)/gi,
+    (m,list)=>' '+list.replace(/\b([ivx]{1,4}|\d{1,2})\b/gi,x=>{const n=/^\d+$/.test(x)?+x:ROMAN[x.toLowerCase()];return n&&n<=12?'C'+n:x;})+' ');
+  t=t.replace(/\bP\s?-?(\d{1,2})\b/g,(m,n)=>+n>=1&&+n<=12?'C'+(+n):m);
+  const set=new Set();
+  const addRange=(a,b)=>{for(let i=Math.min(a,b);i<=Math.max(a,b);i++)set.add(ORDER[i]);};
+  if(/pre[- ]?primary|pre[- ]?school|foundational/i.test(t))addRange(0,4);
+  if(/(?<!pre[- ]?)\bprimary\b/i.test(t))addRange(5,9);
+  if(/\bmiddle (?:school|wing|section|classes)\b/i.test(t))addRange(10,12);
+  if(/\bsenior secondary\b/i.test(t))addRange(15,16);else if(/\bsecondary\b/i.test(t))addRange(13,14);
+  const re=/\bC(\d{1,2})\b|\b(nursery|nur|lkg|ukg|kg|play ?group|pre-?nursery)\b/gi;
+  const toks=[];let m;
+  while((m=re.exec(t)))toks.push({i:m.index,end:m.index+m[0].length,c:m[1]?String(+m[1]):canonClass(m[2])});
+  toks.forEach((a,k)=>{set.add(a.c);const b=toks[k+1];
+    if(b&&/^\s*(?:-|–|—|to|till)\s*$/i.test(t.slice(a.end,b.i)))addRange(ORDER.indexOf(a.c),ORDER.indexOf(b.c));});
+  return set.size?ORDER.filter(c=>set.has(c)):['all'];
+}
+function parseClassesInput(s){
+  s=String(s||'').trim();
+  if(!s||/\ball\b|everyone/i.test(s))return['all'];
+  // typed input: bare numbers and Roman numerals are class numbers
+  s=s.replace(/–|—/g,'-').replace(/\b(\d{1,2}|[ivx]{1,4})\b/gi,x=>{const n=/^\d+$/.test(x)?+x:ROMAN[x.toLowerCase()];return n&&n<=12?'C'+n:x;});
+  return detectClasses(s);
+}
+function formatClasses(arr){
+  if(!arr||!arr.length||arr.includes('all'))return'All';
+  const idx=arr.map(c=>ORDER.indexOf(c)).filter(i=>i>=0).sort((a,b)=>a-b);const out=[];let i=0;
+  while(i<idx.length){let j=i;while(j+1<idx.length&&idx[j+1]===idx[j]+1)j++;
+    if(j-i>=2)out.push(ORDER[idx[i]]+'–'+ORDER[idx[j]]);else for(let k=i;k<=j;k++)out.push(ORDER[idx[k]]);i=j+1;}
+  return out.join(', ');
+}
+function classify(t){const s=t.toLowerCase();
+  if(/\bhouse\b.*\bduty\b|\bon duty\b/.test(s))return'house';
+  if(/vacation|\bbreak\b|recess/.test(s))return'vacation';
+  if(/holiday|school (?:will remain )?closed/.test(s))return'holiday';
+  if(/\bptm\b|parents?[\s'’-]*teachers?\s*meet/.test(s))return'ptm';
+  if(/exam|\btests?\b|assessment|evaluation/.test(s))return'exam';
+  return'event';}
+const KEEP_CAPS=/^(PTM|PTA|KG|LKG|UKG|CV|PG|[IVX]+|P\d+|C\.?V\.?)$/;
+function tidyTitle(s){
+  s=s.replace(/^\s*\((.*)\)[\s.]*$/,'$1').replace(/[|_[\]{}<>«»~*]/g,' ')
+     .replace(/\s*[-–—:]?\s*\bholidays?\b\s*/gi,' ');
+  if((s.match(/\(/g)||[]).length!==(s.match(/\)/g)||[]).length)s=s.replace(/[()]/g,' ');
+  const strip=x=>x.replace(/^[\s,.:;\-–—()'"]+|[\s,.:;\-–—('"]+$/g,'');
+  s=strip(s.replace(/\s{2,}/g,' '));
+  s=strip(s.replace(/\b(?:on|from|to|till|until|w\.?e\.?f\.?|dated?)\s*$/i,''));
+  s=s.split(' ').map(w=>(/^[A-Z][A-Z.'’-]{2,}$/.test(w)&&!KEEP_CAPS.test(w))?w[0]+w.slice(1).toLowerCase():w).join(' ');
+  return s.trim();
+}
+const MONTH_HEAD=new RegExp(`^(?:${MONTH_RE})\\b\\.?(?:\\s*[-,]?\\s*\\d{4})?$`,'i');
+const RANGE_GAP=/^[\s,]*(?:-|–|—|to|till|until|through)[\s,]*(?:(?:mon|tue|tues|wed|wednes|thu|thur|thurs|fri|sat|satur|sun)(?:day)?\b[\s,]*)?$/i;
+
+function parseCalendarText(text){
+  const lines=text.split(/\r?\n/).map(normLine).filter(l=>l.length>1);
+  const raw=[];
+  for(let i=0;i<lines.length;i++){
+    const L=lines[i];
+    if(MONTH_HEAD.test(L))continue;
+    const ds=findDates(L);
+    let start,end=null,approx=false,rest=L;
+    if(ds.length){
+      start=ds[0];let cut=[ds[0].i,ds[0].end];
+      if(ds[1]&&RANGE_GAP.test(L.slice(ds[0].end,ds[1].i))){end=ds[1];cut=[ds[0].i,ds[1].end];}
+      // drop day names written next to the date ("Saturday, May 17", "01.04.2025 Tuesday")
+      const WDAY='(?:mon|tue|tues|wed|wednes|thu|thur|thurs|fri|sat|satur|sun)(?:day)?\\.?';
+      const before=L.slice(0,cut[0]).replace(new RegExp(`\\b${WDAY}[\\s,]*$`,'i'),'');
+      const after=L.slice(cut[1]).replace(new RegExp(`^[\\s,.|\\]\\[]*${WDAY}(?:\\s*[-–—]\\s*${WDAY})?\\b`,'i'),'');
+      rest=before+' '+after;
+    }else{
+      const mm=new RegExp(`\\bmid[\\s\\-–—]*(${MONTH_RE})[a-z]*\\b`,'i').exec(L);
+      if(!mm)continue;
+      start={d:15,m:monthIdx(mm[1]),y:null};approx=true;rest=L.replace(mm[0],' ');
+    }
+    let title=tidyTitle(rest);
+    // a title that wrapped onto the next line(s)
+    if(title.length<3&&lines[i+1]&&!findDates(lines[i+1]).length&&!MONTH_HEAD.test(lines[i+1])){title=tidyTitle(lines[i+1]);i++;}
+    if(title.length<3||!/[a-z]{3}/i.test(title))continue;
+    const type=classify(L);
+    let house=null;
+    if(type==='house'){const h=/^(.*?)\s+house\b/i.exec(title);house=h?h[1].trim():title;title=(h?h[1].trim()+' House':title)+' on duty';}
+    raw.push({start,end,title,type,house,approx,classes:type==='house'?['all']:detectClasses(L)});
+  }
+  // work out the school year from the dates that carry a year
+  const votes={};
+  for(const r of raw)for(const d of [r.start,r.end])if(d&&d.y){const sy=d.m>=3?d.y:d.y-1;votes[sy]=(votes[sy]||0)+1;}
+  const best=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0];
+  const sy=best?+best[0]:thisSession;
+  // a misread year (2028, 2045…) is replaced by the year the month falls in
+  const fill=d=>{if(!d)return null;const y=(d.y===sy||d.y===sy+1)?d.y:(d.m>=3?sy:sy+1);if(d.d>daysIn(y,d.m))return null;return iso(y,d.m,d.d);};
+  const lo=iso(sy,2,1),hi=iso(sy+1,2,31);
+  const seen=new Set(),events=[];
+  for(const r of raw){
+    const s=fill(r.start);if(!s||s<lo||s>hi)continue;
+    let e=fill(r.end);if(e&&(e<=s||e>hi||toT(e)-toT(s)>120*DAY))e='';
+    const key=s+'|'+r.title.toLowerCase();if(seen.has(key))continue;seen.add(key);
+    events.push({id:uid(),start:s,end:e||'',title:r.title.slice(0,90),type:r.type,classes:r.classes,house:r.house,approx:r.approx});
+  }
+  events.sort((a,b)=>a.start.localeCompare(b.start));
+  return{events,sessionStart:sy};
+}
+
+// ================= State =================
+function sample(){
+  const y=thisSession,z=y+1,E=(s,e,t,ty,c)=>({id:uid(),start:s,end:e||'',title:t,type:ty,classes:c?parseClassesInput(c):['all'],house:null,approx:false});
+  return[
+    E(`${y}-04-01`,'','New session begins','event'),
+    E(`${y}-04-14`,'','Ambedkar Jayanti','holiday'),
+    E(`${y}-05-16`,`${y}-06-30`,'Summer vacation','vacation'),
+    E(`${y}-07-20`,`${y}-07-24`,'Unit Test 1','exam','1-12'),
+    E(`${y}-07-25`,'','Parent-teacher meeting','ptm'),
+    E(`${y}-08-15`,'','Independence Day','holiday'),
+    E(`${y}-09-05`,'',"Teachers' Day celebration",'event'),
+    E(`${y}-09-21`,`${y}-10-01`,'Half-yearly exams','exam','1-12'),
+    E(`${y}-10-02`,'','Gandhi Jayanti','holiday'),
+    E(`${y}-10-17`,'','Parent-teacher meeting','ptm'),
+    E(`${y}-11-06`,`${y}-11-11`,'Diwali break','vacation'),
+    E(`${y}-11-14`,'',"Children's Day",'event'),
+    E(`${y}-12-12`,'','Annual Day','event'),
+    E(`${y}-12-25`,'','Christmas','holiday'),
+    E(`${y}-12-26`,`${z}-01-03`,'Winter break','vacation'),
+    E(`${z}-01-26`,'','Republic Day','holiday'),
+    E(`${z}-02-06`,'','Sports Day','event'),
+    E(`${z}-02-23`,`${z}-03-06`,'Annual exams','exam','1-12'),
+    E(`${z}-03-27`,'','Result day and PTM','ptm')
+  ];
+}
+let state={name:'',cls:'3',school:'',house:'',y:thisSession,onlyClass:true,layout:'year',events:sample(),isSample:true};
+const KEY='class-calendar-maker-any-school-v1';
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&Array.isArray(s.events))state=Object.assign(state,s);}catch(e){}
+state.events.forEach(e=>{if(!TYPES[e.type])e.type='event';if(!Array.isArray(e.classes))e.classes=['all'];if(!e.id)e.id=uid();});
+let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}},300);}
+
+const houses=()=>[...new Set(state.events.filter(e=>e.type==='house'&&e.house).map(e=>e.house))];
+const applies=e=>e.type==='house'?(!!state.house&&e.house===state.house):(e.classes.includes('all')||e.classes.includes(state.cls));
+const shown=e=>toT(e.start)!=null&&(e.type==='house'?applies(e):(!state.onlyClass||applies(e)));
+
+let pvMode='year';
+let pvIdx=(()=>{const n=new Date(),i=sessionMonths(state.y).findIndex(o=>o.y===n.getFullYear()&&o.m===n.getMonth());return i<0?0:i;})();
+
+// ================= Calendar sheets =================
+function span(e){const s=toT(e.start);let t=toT(e.end);if(t==null||t<s)t=s;if(t-s>400*DAY)t=s+400*DAY;return[s,t];}
+function dayMap(evs){
+  const map=new Map();
+  for(const e of evs){if(e.approx)continue;const[s,t]=span(e);for(let x=s;x<=t;x+=DAY){const k=new Date(x).toISOString().slice(0,10);if(!map.has(k))map.set(k,[]);map.get(k).push(e);}}
+  return map;
+}
+const topType=list=>list.reduce((a,e)=>TYPES[e.type].p>TYPES[a].p?e.type:a,list[0].type);
+function monthEvents(evs,y,m){
+  const ms=Date.UTC(y,m,1),me=Date.UTC(y,m,daysIn(y,m));
+  return evs.map(e=>{const[s,t]=span(e);if(s>me||t<ms)return null;
+      const d1=new Date(Math.max(s,ms)).getUTCDate(),d2=new Date(Math.min(t,me)).getUTCDate();
+      return{e,d1,d2,label:e.approx?'Mid':(d1===d2?String(d1):d1+'–'+d2)};}).filter(Boolean)
+    .sort((a,b)=>a.d1-b.d1||TYPES[b.e.type].p-TYPES[a.e.type].p);
+}
+const session=()=>`${state.y}–${String(state.y+1).slice(2)}`;
+function head(right,rightSmall){
+  const nm=state.name.trim();
+  const who=nm?esc(nm):esc(CLASS_LABEL(state.cls));
+  const bits=[nm?CLASS_LABEL(state.cls):null,state.house?state.house+' House':null,state.school.trim()||null,state.onlyClass?null:'All classes'].filter(Boolean).map(esc);
+  return `<div class="cal-head"><div><div class="cal-name">${who}</div><div class="cal-sub">${bits.join(' · ')||'School calendar'}</div></div><div class="cal-year"><small>${esc(rightSmall)}</small>${esc(right)}</div></div>`;
+}
+function legend(){
+  return `<div class="cal-legend">${Object.entries(TYPES).filter(([k])=>k!=='house'||state.house).map(([,t])=>`<span><i class="cal-sw" style="background:${t.bg};border:1.5px solid ${t.c}"></i>${t.label}</span>`).join('')}<span><b class="sunk">S</b>&nbsp;= Sunday</span></div>`;
+}
+function yearSheet(){
+  const evs=state.events.filter(shown),map=dayMap(evs);
+  const boxes=sessionMonths(state.y).map(({y,m})=>{
+    let g=WD.map(w=>`<b>${w}</b>`).join('')+'<i></i>'.repeat(dow(y,m,1));
+    for(let d=1;d<=daysIn(y,m);d++){
+      const list=map.get(iso(y,m,d));
+      let sty='';if(list){const t=TYPES[topType(list)];sty=` style="background:${t.bg};color:${t.c};font-weight:700"`;}
+      g+=`<i class="${dow(y,m,d)===0?'sun':''}"${sty}>${d}</i>`;
+    }
+    const me=monthEvents(evs,y,m),MAX=11;
+    let li=me.slice(0,me.length>MAX?MAX-1:MAX).map(o=>`<li><em style="color:${TYPES[o.e.type].c}">${o.label}</em><span>${esc(o.e.title)}</span></li>`).join('');
+    if(me.length>MAX)li+=`<li class="more">+${me.length-MAX+1} more on the monthly pages</li>`;
+    if(!me.length)li='<li class="none">No events</li>';
+    return `<div class="cy-m"><div class="cy-mh">${MONTHS[m]}<span>${y}</span></div><div class="cy-g">${g}</div><ul class="cy-l">${li}</ul></div>`;
+  }).join('');
+  return `<div class="cal-sheet">${head(session(),'School year')}${legend()}<div class="cy">${boxes}</div></div>`;
+}
+function monthSheet(y,m){
+  const evs=state.events.filter(shown),map=dayMap(evs),me=monthEvents(evs,y,m);
+  const first=dow(y,m,1),n=daysIn(y,m),rows=Math.ceil((first+n)/7);
+  let g=WDL.map(w=>`<b>${w}</b>`).join('');
+  for(let i=0;i<rows*7;i++){
+    const d=i-first+1;
+    if(d<1||d>n){g+='<div class="cm-d off"></div>';continue;}
+    const list=map.get(iso(y,m,d))||[];
+    const fills=list.filter(e=>e.type==='holiday'||e.type==='vacation');
+    const bg=fills.length?` style="background:${TYPES[topType(fills)].bg}"`:'';
+    const chips=me.filter(o=>!o.e.approx&&o.d1===d).map(o=>{const t=TYPES[o.e.type];return `<div class="cm-c" style="background:${t.bg};color:${t.c}">${esc(o.e.title)}${o.d2!==o.d1?` <span style="font-weight:500">(to ${o.d2})</span>`:''}</div>`;}).join('');
+    g+=`<div class="cm-d${dow(y,m,d)===0?' sun':''}"${bg}><span class="n">${d}</span>${chips}</div>`;
+  }
+  const list=me.length?me.map(o=>`<li><em>${o.e.approx?'Mid':o.d1===o.d2?`${o.d1} ${MON[m]}`:`${o.d1}–${o.d2}`}</em><span><i style="background:${TYPES[o.e.type].c}"></i>${esc(o.e.title)}</span></li>`).join(''):'<li class="none">No school events this month.</li>';
+  return `<div class="cal-sheet">${head(`${MONTHS[m]} ${y}`,'Session '+session())}<div class="cm"><div class="cm-g" style="grid-template-rows:24px repeat(${rows},minmax(0,1fr))">${g}</div><div class="cm-side"><h4>This month</h4><ul class="cm-list">${list}</ul><h4 style="margin-top:6px">Notes</h4><div class="cm-notes"></div></div></div></div>`;
+}
+
+// ================= Preview =================
+const pvInner=$('#pvInner'),pvScale=$('#pvScale');
+function fit(){const w=pvInner.clientWidth;if(!w)return;const s=w/SHEET_W;pvScale.style.transform=`scale(${s})`;pvInner.style.height=(SHEET_H*s)+'px';}
+function renderPreview(){
+  if(pvMode==='year')pvScale.innerHTML=yearSheet();
+  else{const{y,m}=sessionMonths(state.y)[pvIdx];pvScale.innerHTML=monthSheet(y,m);$('#mLabel').textContent=`${MONTHS[m]} ${y}`;}
+  $('#mnav').hidden=pvMode!=='month';
+  $('#pvYear').setAttribute('aria-pressed',pvMode==='year');$('#pvMonth').setAttribute('aria-pressed',pvMode==='month');
+  $('#sampleBanner').hidden=!state.isSample;
+  fit();
+}
+try{new ResizeObserver(fit).observe(pvInner);}catch(e){addEventListener('resize',fit);}
+$('#pvYear').onclick=()=>{pvMode='year';renderPreview();};
+$('#pvMonth').onclick=()=>{pvMode='month';renderPreview();};
+$('#mPrev').onclick=()=>{pvIdx=(pvIdx+11)%12;renderPreview();};
+$('#mNext').onclick=()=>{pvIdx=(pvIdx+1)%12;renderPreview();};
+
+// ================= Dates table =================
+const tbody=$('#tbody');
+const typeOptions=sel=>Object.entries(TYPES).map(([k,t])=>`<option value="${k}"${k===sel?' selected':''}>${t.label}</option>`).join('');
+function renderTable(){
+  state.events.sort((a,b)=>(a.start||'9').localeCompare(b.start||'9'));
+  if(!state.events.length)tbody.innerHTML='<tr><td colspan="6" class="empty">No dates yet. Read them from pictures, load a dates file, or add them by hand.</td></tr>';
+  else tbody.innerHTML=state.events.map(e=>`<tr data-id="${e.id}" class="${applies(e)?'':'na'}">
+    <td><input type="date" id="s-${e.id}" data-f="start" value="${esc(e.start)}" aria-label="From"></td>
+    <td><input type="date" id="e-${e.id}" data-f="end" value="${esc(e.end)}" aria-label="To"></td>
+    <td><input type="text" id="t-${e.id}" data-f="title" value="${esc(e.title)}" aria-label="What"></td>
+    <td><span class="tdot" style="background:${TYPES[e.type].c}"></span><select id="y-${e.id}" data-f="type" aria-label="Type" style="width:calc(100% - 18px)">${typeOptions(e.type)}</select></td>
+    <td>${e.type==='house'?`<input type="text" id="c-${e.id}" data-f="house" value="${esc(e.house||'')}" aria-label="House" placeholder="House name">`:`<input type="text" id="c-${e.id}" data-f="classes" value="${esc(formatClasses(e.classes))}" aria-label="Classes">`}</td>
+    <td><button class="x" type="button" data-del="${e.id}" aria-label="Remove">×</button></td></tr>`).join('');
+  updateCount();
+}
+function updateCount(){
+  const n=state.events.length,k=state.events.filter(e=>e.type!=='house'&&applies(e)).length;
+  $('#dateCount').textContent=n?`${n} dates in the list. ${k} apply to ${CLASS_LABEL(state.cls)}.`:'';
+}
+function changed(){state.isSample=false;save();renderPreview();updateCount();}
+tbody.addEventListener('input',ev=>{
+  if(ev.target.dataset.f!=='title')return;
+  const e=state.events.find(x=>x.id===ev.target.closest('tr').dataset.id);if(!e)return;
+  e.title=ev.target.value;changed();
+});
+tbody.addEventListener('change',ev=>{
+  const f=ev.target.dataset.f;if(!f)return;const tr=ev.target.closest('tr');
+  const e=state.events.find(x=>x.id===tr.dataset.id);if(!e)return;
+  if(f==='classes'){e.classes=parseClassesInput(ev.target.value);ev.target.value=formatClasses(e.classes);}
+  else if(f==='type'){e.type=ev.target.value;if(e.type==='house'&&!e.house)e.house='';renderTable();syncHouses();}
+  else if(f==='house'){e.house=ev.target.value.trim();syncHouses();}
+  else{e[f]=ev.target.value;if(f==='start')e.approx=false;}
+  tr.className=applies(e)?'':'na';
+  changed();
+});
+tbody.addEventListener('click',ev=>{
+  const id=ev.target.dataset&&ev.target.dataset.del;if(!id)return;
+  state.events=state.events.filter(e=>e.id!==id);changed();renderTable();syncHouses();
+});
+$('#addBtn').onclick=()=>{
+  const e={id:uid(),start:'',end:'',title:'',type:'event',classes:['all'],house:null,approx:false};
+  state.events.push(e);state.isSample=false;save();renderTable();
+  const el=document.getElementById('s-'+e.id);if(el){el.scrollIntoView({block:'center'});el.focus();}
+};
+let clearArmed=false;
+$('#clearBtn').onclick=()=>{
+  const b=$('#clearBtn');
+  if(!clearArmed){clearArmed=true;b.textContent='Click again to clear';setTimeout(()=>{clearArmed=false;b.textContent='Clear all';},3000);return;}
+  clearArmed=false;b.textContent='Clear all';state.events=[];changed();renderTable();syncHouses();
+};
+
+// ================= Child & print controls =================
+const classSel=$('#classSel'),yearSel=$('#yearSel'),houseSel=$('#houseSel');
+function syncClassOptions(){
+  const used=new Set();state.events.forEach(e=>e.type!=='house'&&e.classes.forEach(c=>c!=='all'&&used.add(c)));
+  const opt=c=>`<option value="${c}">${CLASS_LABEL(c)}</option>`;
+  const inCal=ORDER.filter(c=>used.has(c)),rest=ORDER.filter(c=>!used.has(c));
+  classSel.innerHTML=inCal.length&&!state.isSample?`<optgroup label="In your calendar">${inCal.map(opt).join('')}</optgroup><optgroup label="Other classes">${rest.map(opt).join('')}</optgroup>`:ORDER.map(opt).join('');
+  classSel.value=state.cls;
+}
+function syncYears(){
+  const ys=[];for(let y=Math.min(state.y,thisSession)-1;y<=Math.max(state.y,thisSession)+2;y++)ys.push(y);
+  yearSel.innerHTML=ys.map(y=>`<option value="${y}">April ${y} – March ${y+1}</option>`).join('');yearSel.value=state.y;
+}
+function syncHouses(){
+  const hs=houses();
+  if(state.house&&!hs.includes(state.house))state.house='';
+  $('#houseField').hidden=!hs.length;
+  houseSel.innerHTML='<option value="">Don’t show house duty</option>'+hs.map(h=>`<option value="${esc(h)}">${esc(h)} House</option>`).join('');
+  houseSel.value=state.house;
+}
+function syncFields(){
+  syncClassOptions();syncYears();syncHouses();
+  $('#nameIn').value=state.name;$('#schoolIn').value=state.school;$('#onlyClass').checked=state.onlyClass;
+  document.querySelectorAll('input[name=layout]').forEach(r=>r.checked=r.value===state.layout);
+}
+$('#nameIn').addEventListener('input',e=>{state.name=e.target.value;save();renderPreview();});
+$('#schoolIn').addEventListener('input',e=>{state.school=e.target.value;save();renderPreview();});
+classSel.addEventListener('change',e=>{state.cls=e.target.value;save();renderPreview();renderTable();});
+yearSel.addEventListener('change',e=>{state.y=+e.target.value;save();renderPreview();});
+houseSel.addEventListener('change',e=>{state.house=e.target.value;save();renderPreview();renderTable();});
+$('#onlyClass').addEventListener('change',e=>{state.onlyClass=e.target.checked;save();renderPreview();});
+document.querySelectorAll('input[name=layout]').forEach(r=>r.addEventListener('change',()=>{state.layout=r.value;save();}));
+
+$('#printBtn').onclick=()=>{
+  const sheets=[];
+  if(state.layout!=='month')sheets.push(yearSheet());
+  if(state.layout!=='year')sessionMonths(state.y).forEach(({y,m})=>sheets.push(monthSheet(y,m)));
+  $('#printArea').innerHTML=sheets.join('');
+  const old=document.title;document.title=`${state.name.trim()||CLASS_LABEL(state.cls)} calendar ${session()}`;
+  window.print();
+  setTimeout(()=>{document.title=old;},1000);
+};
+
+// ================= Dates file =================
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function saveFile(name,text,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+}
+$('#saveJsonBtn').onclick=()=>{
+  const data=JSON.stringify({app:'class-calendar-maker',version:1,school:state.school,sessionStart:state.y,events:state.events.map(({id,...r})=>r)},null,2);
+  saveFile(`${slug(state.school.trim()||'school')}-dates-${state.y}-${String(state.y+1).slice(2)}.json`,data,'application/json');
+};
+$('#loadJson').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    const obj=JSON.parse(await f.text());
+    const evs=(obj.events||[]).filter(r=>toT(r.start)!=null).map(r=>({id:uid(),start:r.start,end:toT(r.end)!=null?r.end:'',title:String(r.title||''),type:TYPES[r.type]?r.type:'event',classes:Array.isArray(r.classes)?r.classes.filter(c=>c==='all'||ORDER.includes(c)):['all'],house:r.house||null,approx:!!r.approx}));
+    if(!evs.length)throw 0;
+    evs.forEach(ev=>{if(!ev.classes.length)ev.classes=['all'];});
+    state.events=evs;if(obj.school&&!state.school.trim())state.school=String(obj.school);
+    if(+obj.sessionStart>=2020&&+obj.sessionStart<=2040)state.y=+obj.sessionStart;
+    state.isSample=false;save();syncFields();renderTable();renderPreview();
+    setStatus(`Loaded ${evs.length} dates from ${f.name}.`,'ok');
+  }catch(err){setStatus('That file is not a dates file from this page.','err');}
+});
+
+// ================= Pictures & reading =================
+let photos=[];
+const rs=$('#readStatus');
+function setStatus(msg,kind){rs.textContent=msg;rs.className='status'+(kind?' '+kind:'');}
+function addFiles(list){
+  for(const f of list){if(/^image\//.test(f.type))photos.push({f,url:URL.createObjectURL(f),rot:0});}
+  renderThumbs();
+}
+function renderThumbs(){
+  $('#thumbs').innerHTML=photos.map((p,i)=>`<div class="thumb"><img src="${p.url}" alt="Calendar picture ${i+1}" style="transform:rotate(${p.rot}deg)"><button type="button" class="rm" data-rm="${i}" aria-label="Remove picture ${i+1}">×</button><div class="tb"><button type="button" data-rot="${i}" data-by="-90" aria-label="Rotate left">↺</button><button type="button" data-rot="${i}" data-by="90" aria-label="Rotate right">↻</button></div></div>`).join('');
+  $('#readBtn').disabled=!photos.length||reading;
+}
+$('#thumbs').addEventListener('click',e=>{
+  const d=e.target.dataset||{};
+  if(d.rm!=null){URL.revokeObjectURL(photos[d.rm].url);photos.splice(+d.rm,1);renderThumbs();}
+  else if(d.rot!=null){const p=photos[+d.rot];p.rot=(p.rot+ +d.by+360)%360;p.manual=true;renderThumbs();}
+});
+$('#photoInput').addEventListener('change',e=>{addFiles(e.target.files);e.target.value='';});
+const drop=$('#drop');
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files)addFiles(e.dataTransfer.files);});
+document.addEventListener('paste',e=>{const fs=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type));if(fs.length)addFiles(fs);});
+
+async function loadBitmap(file){
+  if(window.createImageBitmap){try{return await createImageBitmap(file,{imageOrientation:'from-image'});}catch(e){}}
+  return await new Promise((res,rej)=>{const img=new Image();img.onload=()=>res(img);img.onerror=rej;img.src=URL.createObjectURL(file);});
+}
+function toCanvas(bmp,rot){
+  const w0=bmp.width,h0=bmp.height,MAX=2400,s=Math.min(1,MAX/Math.max(w0,h0));
+  const w=Math.round(w0*s),h=Math.round(h0*s),side=rot%180!==0;
+  const c=document.createElement('canvas');c.width=side?h:w;c.height=side?w:h;
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
+  g.translate(c.width/2,c.height/2);g.rotate(rot*Math.PI/180);g.drawImage(bmp,-w/2,-h/2,w,h);
+  return c;
+}
+const countDates=text=>text.split('\n').reduce((n,l)=>n+(findDates(normLine(l)).length?1:0),0);
+
+let worker=null,reading=false,stopRequested=false;
+const bar=$('#bar'),barFill=$('#barFill');
+let prog={base:0,span:1};
+function setBar(p){barFill.style.width=Math.round(Math.max(0,Math.min(1,p))*100)+'%';}
+async function getWorker(){
+  if(worker)return worker;
+  if(!window.Tesseract)throw new Error('engine');
+  setStatus('Getting the text reader ready (first time only, about 5 MB)…');
+  worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text')setBar(prog.base+prog.span*m.progress);}});
+  await worker.setParameters({preserve_interword_spaces:'1'});
+  return worker;
+}
+async function ocr(canvas){const w=await getWorker();const{data}=await w.recognize(canvas);return data.text||'';}
+
+function applyParsed(res,sourceLabel){
+  if(!res.events.length){setStatus(`No dates were found in the ${sourceLabel}. Try clearer, straighter pictures, or rotate them with ↺ ↻.`,'err');return;}
+  if($('#replaceChk').checked||state.isSample)state.events=res.events;
+  else{const seen=new Set(state.events.map(e=>e.start+'|'+e.title.toLowerCase()));state.events=state.events.concat(res.events.filter(e=>!seen.has(e.start+'|'+e.title.toLowerCase())));}
+  state.y=res.sessionStart;state.isSample=false;
+  const used=new Set();state.events.forEach(e=>e.classes.forEach(c=>used.add(c)));
+  if(!used.has(state.cls)){const first=ORDER.find(c=>used.has(c));if(first)state.cls=first;}
+  save();syncFields();renderTable();renderPreview();
+  setStatus(`Found ${res.events.length} dates for ${res.sessionStart}–${String(res.sessionStart+1).slice(2)}. Please check them in the list below.`,'ok');
+  $('.dates').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('#readBtn').onclick=async()=>{
+  if(reading||!photos.length)return;
+  reading=true;stopRequested=false;$('#readBtn').disabled=true;$('#stopBtn').hidden=false;bar.hidden=false;setBar(0);
+  const texts=[];
+  try{
+    for(let i=0;i<photos.length;i++){
+      if(stopRequested)break;
+      const p=photos[i],label=photos.length>1?`picture ${i+1} of ${photos.length}`:'the picture';
+      prog={base:i/photos.length,span:1/photos.length};
+      const bmp=await loadBitmap(p.f);
+      await getWorker();
+      setStatus(`Reading ${label}…`);
+      let text=await ocr(toCanvas(bmp,p.rot)),score=countDates(text);
+      if(score<3&&!p.manual){
+        // probably sideways: try the other ways round and keep the best
+        for(const r of [90,270,180]){
+          if(stopRequested)break;
+          const rot=(p.rot+r)%360;
+          setStatus(`Reading ${label} (trying it rotated)…`);
+          const t2=await ocr(toCanvas(bmp,rot)),s2=countDates(t2);
+          if(s2>score){text=t2;score=s2;p.rot=rot;renderThumbs();}
+          if(score>=5)break;
+        }
+      }
+      texts.push(text);
+    }
+    setBar(1);
+    if(stopRequested&&!texts.length){setStatus('Stopped.');return;}
+    applyParsed(parseCalendarText(texts.join('\n')),'pictures');
+  }catch(e){
+    setStatus(e&&e.message==='engine'?'The text reader could not load. Check your internet connection and reload the page.':'Something went wrong while reading the pictures. Try again, or try fewer pictures at a time.','err');
+  }finally{
+    reading=false;$('#stopBtn').hidden=true;renderThumbs();setTimeout(()=>{bar.hidden=true;},800);
+  }
+};
+$('#stopBtn').onclick=()=>{stopRequested=true;setStatus('Stopping after this picture…');};
+$('#pasteBtn').onclick=()=>{
+  const t=$('#pasteIn').value;
+  if(!t.trim()){setStatus('Paste the calendar text first.','err');return;}
+  applyParsed(parseCalendarText(t),'pasted text');
+};
+
+// ================= Boot =================
+syncFields();renderTable();renderPreview();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+})();
+</script>
+</body>
+</html>
